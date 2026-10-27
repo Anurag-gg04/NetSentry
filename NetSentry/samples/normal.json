@@ -1,0 +1,70 @@
+{
+  "records": [
+    {
+      "timestamp": "2026-10-27T10:00:00Z",
+      "srcIp": "10.10.0.1",
+      "dstIp": "192.0.2.44",
+      "srcPort": 41000,
+      "dstPort": 443,
+      "protocol": "TCP",
+      "packets": 3,
+      "bytes": 1200,
+      "connectionStatus": "SUCCESS"
+    },
+    {
+      "timestamp": "2026-10-27T10:00:07Z",
+      "srcIp": "10.10.0.2",
+      "dstIp": "192.0.2.44",
+      "srcPort": 41001,
+      "dstPort": 443,
+      "protocol": "TCP",
+      "packets": 3,
+      "bytes": 1200,
+      "connectionStatus": "SUCCESS"
+    },
+    {
+      "timestamp": "2026-10-27T10:01:00Z",
+      "srcIp": "10.10.1.1",
+      "dstIp": "192.0.2.44",
+      "srcPort": 41002,
+      "dstPort": 443,
+      "protocol": "TCP",
+      "packets": 3,
+      "bytes": 1200,
+      "connectionStatus": "SUCCESS"
+    },
+    {
+      "timestamp": "2026-10-27T10:01:07Z",
+      "srcIp": "10.10.1.2",
+      "dstIp": "192.0.2.44",
+      "srcPort": 41003,
+      "dstPort": 443,
+      "protocol": "TCP",
+      "packets": 3,
+      "bytes": 1200,
+      "connectionStatus": "SUCCESS"
+    },
+    {
+      "timestamp": "2026-10-27T10:02:00Z",
+      "srcIp": "10.10.2.1",
+      "dstIp": "192.0.2.44",
+      "srcPort": 41004,
+      "dstPort": 443,
+      "protocol": "TCP",
+      "packets": 3,
+      "bytes": 1200,
+      "connectionStatus": "SUCCESS"
+    },
+    {
+      "timestamp": "2026-10-27T10:02:07Z",
+      "srcIp": "10.10.2.2",
+      "dstIp": "192.0.2.44",
+      "srcPort": 41005,
+      "dstPort": 443,
+      "protocol": "TCP",
+      "packets": 3,
+      "bytes": 1200,
+      "connectionStatus": "SUCCESS"
+    }
+  ]
+}

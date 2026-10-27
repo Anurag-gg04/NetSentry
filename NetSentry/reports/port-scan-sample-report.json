@@ -1,0 +1,16 @@
+{
+  "status":"completed",
+  "datasetName":"port-scan.csv",
+  "analysisTimestamp":"2026-10-27T14:44:58.398058383Z",
+  "durationMs":426,
+  "totalRecords":12,
+  "acceptedRecords":12,
+  "rejectedRecords":0,
+  "recordsPerSecond":28.169014084507044,
+  "alertCount":2,
+  "severityCounts":{"HIGH":2,"MEDIUM":0,"LOW":0},
+  "alerts":[{"id":"099935ee-4956-4a8b-8b9a-ee12997ebe6f","ruleName":"Port Scan Detection","severity":"HIGH","srcIp":"198.51.100.23","dstIp":"192.0.2.80","detectionTimestamp":"2026-10-27T10:00:22Z","windowStart":"2026-10-27T10:00:00Z","windowEnd":"2026-10-27T10:00:22Z","observedMetric":12.0,"configuredThreshold":10.0,"metricName":"distinct destination ports","explanation":"Source contacted 12 distinct destination ports on the same target within 60 seconds. This pattern can indicate port discovery, but can also occur during legitimate service checks.","recommendations":["Confirm whether the source is an approved scanner or monitoring host.","Review firewall and service logs for the target during the window.","Apply rate limits or temporary blocks only after validating business impact."]},{"id":"c0934541-4776-4932-a644-46fc998b2057","ruleName":"Repeated Failed Connections","severity":"HIGH","srcIp":"198.51.100.23","dstIp":"192.0.2.80","detectionTimestamp":"2026-10-27T10:00:22Z","windowStart":"2026-10-27T10:00:02Z","windowEnd":"2026-10-27T10:00:22Z","observedMetric":8.0,"configuredThreshold":8.0,"metricName":"failed connection attempts","explanation":"Observed 8 FAILED connection records from the source to this target inside 120 seconds. Failed connections can also result from misconfiguration or temporary outages.","recommendations":["Inspect authentication and service logs for related failures.","Check for a recent deployment, network change, or expired credentials.","Escalate or rate-limit only if the activity is unrecognized and corroborated."]}],
+  "validationErrors":[],
+  "trafficTrend":[{"bucket":"2026-10-27T10:00:00Z","connections":12,"bytes":720}],
+  "rulesUsed":{"allowlist":["127.0.0.1","::1"],"portScan":{"enabled":true,"threshold":10,"windowSeconds":60,"severity":"HIGH","bucketSeconds":60,"baselineMultiplier":2.0},"connectionBurst":{"enabled":true,"threshold":30,"windowSeconds":60,"severity":"MEDIUM","bucketSeconds":60,"baselineMultiplier":2.0},"failedConnections":{"enabled":true,"threshold":8,"windowSeconds":120,"severity":"HIGH","bucketSeconds":60,"baselineMultiplier":2.0},"trafficSpike":{"enabled":true,"threshold":20,"windowSeconds":60,"severity":"MEDIUM","bucketSeconds":60,"baselineMultiplier":2.0},"deduplicationWindowSeconds":60}
+}

@@ -1,0 +1,5 @@
+timestamp,srcIp,dstIp,srcPort,dstPort,protocol,packets,bytes,connectionStatus
+2026-10-27T10:00:00Z,10.0.0.2,192.0.2.2,40000,443,TCP,2,100,SUCCESS
+not-a-date,999.1.1.1,192.0.2.2,abc,70000,FTP,-1,wrong,FAILED
+2026-10-27T10:00:03Z,10.0.0.3,192.0.2.3,50000,80,TCP,4,-5,FAILED
+2026-10-27T10:00:04Z,10.0.0.4,192.0.2.4,50000,80,TCP,4,100,CONNECTED

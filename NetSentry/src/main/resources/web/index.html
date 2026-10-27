@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101821" />
+    <meta
+      name="description"
+      content="NetSentry local network-flow analysis and heuristic detection dashboard"
+    />
+    <title>NetSentry — Network Security Analytics</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="/" aria-label="NetSentry home"
+          ><span class="brand-mark">N<span>+</span></span
+          ><span class="brand-copy"
+            ><strong>NetSentry</strong><small>NETWORK INTELLIGENCE</small></span
+          ></a
+        >
+        <div class="nav-label">WORKSPACE</div>
+        <nav class="main-nav" aria-label="Main navigation">
+          <button class="nav-item active" data-page="overview">
+            <span class="nav-icon">◫</span> Overview
+          </button>
+          <button class="nav-item" data-page="analysis">
+            <span class="nav-icon">⌁</span> Traffic analysis
+          </button>
+          <button class="nav-item" data-page="alerts">
+            <span class="nav-icon">⚑</span> Alerts explorer
+            <span class="nav-count" id="nav-alert-count">0</span>
+          </button>
+          <button class="nav-item" data-page="hosts">
+            <span class="nav-icon">⌘</span> Host intelligence
+          </button>
+          <button class="nav-item" data-page="correlations">
+            <span class="nav-icon">⤳</span> Alert correlations
+          </button>
+          <button class="nav-item" data-page="incidents">
+            <span class="nav-icon">▣</span> Incident desk
+            <span class="nav-count" id="nav-incident-count">0</span>
+          </button>
+          <button class="nav-item" data-page="rules">
+            <span class="nav-icon">⌘</span> Detection rules
+          </button>
+          <button class="nav-item" data-page="reports">
+            <span class="nav-icon">▤</span> Reports
+          </button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="local-badge">
+            <span class="status-dot"></span>
+            <div>
+              <strong>Local analysis engine</strong
+              ><small id="engine-status">Checking connection…</small>
+            </div>
+          </div>
+          <p class="side-note">
+            Built for authorized flow records. Alerts are heuristic signals, not
+            proof of an attack.
+          </p>
+        </div>
+      </aside>
+      <main class="main-content">
+        <header class="topbar">
+          <button
+            class="mobile-menu"
+            id="mobile-menu"
+            aria-label="Toggle navigation"
+          >
+            ☰
+          </button>
+          <div class="breadcrumb">
+            <span>NetSentry</span><span class="crumb-slash">/</span
+            ><strong id="page-crumb">Overview</strong>
+          </div>
+          <div class="top-actions">
+            <span class="local-only"
+              ><span class="status-dot"></span> LOCAL ONLY</span
+            ><span class="version-label" id="version-label">v1.0.0</span>
+          </div>
+        </header>
+        <div class="page-wrap">
+          <section
+            class="page active"
+            id="page-overview"
+            aria-labelledby="overview-title"
+          >
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">SECURITY OPERATIONS / OVERVIEW</p>
+                <h1 id="overview-title">Network overview</h1>
+                <p class="muted">
+                  A clear view of the latest flow analysis and suspicious
+                  activity.
+                </p>
+              </div>
+              <button class="primary-btn" data-go="analysis">
+                ＋ Analyze traffic
+              </button>
+            </div>
+            <div class="empty-banner hidden" id="first-run-banner">
+              <div class="empty-icon">◈</div>
+              <div>
+                <strong>No analysis has been run yet</strong>
+                <p>
+                  Start with one of the bundled synthetic datasets or upload an
+                  authorized CSV/JSON flow file.
+                </p>
+              </div>
+              <button class="secondary-btn" data-go="analysis">
+                Get started <span>→</span>
+              </button>
+            </div>
+            <div class="metric-grid">
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span>Total records</span
+                  ><span class="metric-icon cyan">▦</span>
+                </div>
+                <strong class="metric-value" id="metric-records">—</strong>
+                <div class="metric-foot" id="metric-records-foot">
+                  Awaiting first analysis
+                </div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span>Suspicious events</span
+                  ><span class="metric-icon red">⚑</span>
+                </div>
+                <strong class="metric-value" id="metric-alerts">—</strong>
+                <div class="metric-foot" id="metric-alerts-foot">
+                  Heuristic alerts generated
+                </div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span>Rejected records</span
+                  ><span class="metric-icon orange">⊘</span>
+                </div>
+                <strong class="metric-value" id="metric-rejected">—</strong>
+                <div class="metric-foot" id="metric-rejected-foot">
+                  Input validation results
+                </div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span>Analysis duration</span
+                  ><span class="metric-icon green">◷</span>
+                </div>
+                <strong class="metric-value" id="metric-duration">—</strong>
+                <div class="metric-foot" id="metric-duration-foot">
+                  Processing time
+                </div>
+              </article>
+            </div>
+            <div class="chart-grid">
+              <article class="panel chart-panel">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Traffic trend</h2>
+                    <p class="muted">Accepted flow records per minute</p>
+                  </div>
+                  <span class="panel-tag">LATEST DATASET</span>
+                </div>
+                <div class="chart-canvas-wrap">
+                  <canvas
+                    id="traffic-chart"
+                    aria-label="Traffic trend chart"
+                  ></canvas>
+                  <div class="chart-empty" id="traffic-chart-empty">
+                    Run an analysis to populate this chart.
+                  </div>
+                </div>
+              </article>
+              <article class="panel chart-panel distribution-panel">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Alert distribution</h2>
+                    <p class="muted">Severity of detected patterns</p>
+                  </div>
+                </div>
+                <div class="severity-chart" id="severity-chart">
+                  <div class="chart-empty inline">No alerts to display.</div>
+                </div>
+                <div class="severity-legend">
+                  <span><i class="dot high"></i> High</span
+                  ><span><i class="dot medium"></i> Medium</span
+                  ><span><i class="dot low"></i> Low</span>
+                </div>
+              </article>
+            </div>
+            <article class="panel table-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Recent security alerts</h2>
+                  <p class="muted">
+                    Latest findings from the most recent analysis
+                  </p>
+                </div>
+                <button class="text-btn" data-go="alerts">
+                  Explore all alerts <span>→</span>
+                </button>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Severity</th>
+                      <th>Detection rule</th>
+                      <th>Source</th>
+                      <th>Destination</th>
+                      <th>Observed</th>
+                      <th>Detected at</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recent-alerts">
+                    <tr>
+                      <td colspan="6" class="empty-cell">
+                        No analysis data available yet.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+            <div class="footer-meta">
+              <span id="last-analysis">No analysis performed</span
+              ><span>Heuristic analysis · no live packet capture</span>
+            </div>
+          </section>
+
+          <section
+            class="page"
+            id="page-analysis"
+            aria-labelledby="analysis-title"
+          >
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">INGESTION / DETECTION PIPELINE</p>
+                <h1 id="analysis-title">Traffic analysis</h1>
+                <p class="muted">
+                  Upload a previously collected flow dataset, or use a bundled
+                  synthetic example.
+                </p>
+              </div>
+            </div>
+            <div class="analysis-layout">
+              <article class="panel upload-panel">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Analyze a dataset</h2>
+                    <p class="muted">CSV or JSON · maximum file size 10 MiB</p>
+                  </div>
+                  <span class="step-mark">01</span>
+                </div>
+                <label class="drop-zone" id="drop-zone" for="file-input"
+                  ><span class="upload-symbol">↑</span
+                  ><strong>Drop a flow file here</strong
+                  ><span>or <u>browse files</u> from your computer</span
+                  ><small>Accepted formats: .csv, .json</small
+                  ><input
+                    id="file-input"
+                    type="file"
+                    accept=".csv,.json,text/csv,application/json"
+                    hidden
+                /></label>
+                <div class="selected-file hidden" id="selected-file">
+                  <span class="file-icon">▤</span>
+                  <div>
+                    <strong id="selected-file-name">No file selected</strong
+                    ><small id="selected-file-size"></small>
+                  </div>
+                  <button
+                    class="icon-btn"
+                    id="clear-file"
+                    aria-label="Clear selected file"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div class="form-actions">
+                  <button class="primary-btn" id="upload-analyze" disabled>
+                    Analyze uploaded file <span>→</span>
+                  </button>
+                </div>
+                <div class="divider-label"><span>OR USE A SAMPLE</span></div>
+                <label class="field-label" for="sample-select"
+                  >Bundled synthetic dataset</label
+                ><select class="select-field" id="sample-select">
+                  <option value="">Loading samples…</option>
+                </select>
+                <p class="helper-text" id="sample-description">
+                  Synthetic data works offline and is safe to use for demos.
+                </p>
+                <button class="secondary-btn full-width" id="sample-analyze">
+                  Analyze selected sample <span>→</span>
+                </button>
+                <div class="privacy-note">
+                  <span>◉</span>
+                  <p>
+                    <strong>Local by design.</strong> Files are processed by the
+                    local Java backend and are not sent to an external service.
+                  </p>
+                </div>
+              </article>
+              <div class="analysis-side">
+                <article class="panel">
+                  <div class="panel-heading">
+                    <div>
+                      <h2>Expected columns</h2>
+                      <p class="muted">CSV field reference</p>
+                    </div>
+                  </div>
+                  <div class="schema-list">
+                    <code>timestamp</code
+                    ><span>ISO-8601 timestamp with timezone</span
+                    ><code>srcIp / dstIp</code><span>Valid IP addresses</span
+                    ><code>srcPort / dstPort</code
+                    ><span>Integer port, range 0–65535</span
+                    ><code>protocol</code><span>TCP, UDP, ICMP, UNKNOWN</span
+                    ><code>packets / bytes</code
+                    ><span>Non-negative integer values</span
+                    ><code>connectionStatus</code
+                    ><span>SUCCESS, FAILED, UNKNOWN</span>
+                  </div>
+                </article>
+                <article class="panel result-panel" id="analysis-result">
+                  <div class="panel-heading">
+                    <div>
+                      <h2>Latest run</h2>
+                      <p class="muted">
+                        Results from the last completed analysis
+                      </p>
+                    </div>
+                    <span class="panel-tag" id="result-status">NO RUN</span>
+                  </div>
+                  <div id="analysis-result-content" class="result-placeholder">
+                    Results will appear here after a dataset is analyzed.
+                  </div>
+                </article>
+              </div>
+            </div>
+            <div
+              class="alert-message hidden"
+              id="analysis-error"
+              role="alert"
+            ></div>
+          </section>
+
+          <section class="page" id="page-alerts" aria-labelledby="alerts-title">
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">INVESTIGATION / ALERT TRIAGE</p>
+                <h1 id="alerts-title">Alerts explorer</h1>
+                <p class="muted">
+                  Search, filter, and inspect findings from the latest run.
+                </p>
+              </div>
+              <button class="secondary-btn" id="refresh-alerts">
+                ↻ Refresh
+              </button>
+            </div>
+            <article class="panel filters-panel">
+              <div class="filters-row">
+                <label class="filter-field search-field"
+                  ><span>Search IP address</span
+                  ><input
+                    id="ip-filter"
+                    type="search"
+                    placeholder="e.g. 198.51.100.23" /></label
+                ><label class="filter-field"
+                  ><span>Severity</span
+                  ><select id="severity-filter">
+                    <option value="">All severities</option>
+                    <option value="HIGH">High</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="LOW">Low</option>
+                  </select></label
+                ><label class="filter-field"
+                  ><span>Detection rule</span
+                  ><select id="rule-filter">
+                    <option value="">All rules</option>
+                  </select></label
+                ><label class="filter-field"
+                  ><span>Sort</span
+                  ><select id="sort-filter">
+                    <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                    <option value="severity">Severity first</option>
+                  </select></label
+                ><button class="secondary-btn filter-reset" id="reset-filters">
+                  Reset
+                </button>
+              </div>
+              <div class="filter-summary" id="alert-summary">
+                Showing 0 alerts
+              </div>
+            </article>
+            <div class="alerts-layout">
+              <article class="panel table-panel alerts-table-panel">
+                <div class="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Severity</th>
+                        <th>Rule</th>
+                        <th>Source / destination</th>
+                        <th>Observed metric</th>
+                        <th>Timestamp</th>
+                      </tr>
+                    </thead>
+                    <tbody id="alerts-table-body">
+                      <tr>
+                        <td colspan="5" class="empty-cell">
+                          No alerts yet. Analyze a dataset first.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+              <aside class="panel alert-detail" id="alert-detail">
+                <div class="detail-empty">
+                  <span>⌕</span><strong>Select an alert</strong>
+                  <p>
+                    Choose a finding from the table to inspect its evidence and
+                    suggested investigation steps.
+                  </p>
+                </div>
+              </aside>
+            </div>
+          </section>
+
+          <section class="page" id="page-hosts" aria-labelledby="hosts-title">
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">INVESTIGATION / ENTITY CONTEXT</p>
+                <h1 id="hosts-title">Host intelligence</h1>
+                <p class="muted">
+                  Summarize hosts that appear in alerts from the latest
+                  analysis. This is alert-derived context, not a full network
+                  inventory.
+                </p>
+              </div>
+              <button class="secondary-btn" id="refresh-hosts">
+                ↻ Refresh
+              </button>
+            </div>
+            <div class="metric-grid host-metrics">
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span>Observed hosts</span
+                  ><span class="metric-icon cyan">◎</span>
+                </div>
+                <strong class="metric-value" id="host-count">0</strong>
+                <div class="metric-foot">
+                  Unique source and destination IPs in alerts
+                </div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span>Source hosts</span
+                  ><span class="metric-icon orange">↗</span>
+                </div>
+                <strong class="metric-value" id="host-source-count">0</strong>
+                <div class="metric-foot">
+                  Hosts that triggered detection rules
+                </div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span>Destination hosts</span
+                  ><span class="metric-icon green">↘</span>
+                </div>
+                <strong class="metric-value" id="host-destination-count"
+                  >0</strong
+                >
+                <div class="metric-foot">
+                  Hosts appearing as alert destinations
+                </div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span>High severity links</span
+                  ><span class="metric-icon red">⚑</span>
+                </div>
+                <strong class="metric-value" id="host-high-count">0</strong>
+                <div class="metric-foot">Alert records rated HIGH</div>
+              </article>
+            </div>
+            <article class="panel table-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Host activity summary</h2>
+                  <p class="muted">Select a host to see its alert evidence.</p>
+                </div>
+                <label class="filter-field"
+                  ><span>Search host</span
+                  ><input
+                    id="host-search"
+                    type="search"
+                    placeholder="IP address"
+                /></label>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Host IP</th>
+                      <th>Role</th>
+                      <th>Alert count</th>
+                      <th>High</th>
+                      <th>Detection rules</th>
+                      <th>Last observed</th>
+                    </tr>
+                  </thead>
+                  <tbody id="hosts-table-body">
+                    <tr>
+                      <td colspan="6" class="empty-cell">
+                        Analyze a dataset to populate host intelligence.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+            <article class="panel host-detail-panel" id="host-detail">
+              <div class="detail-empty">
+                <strong>No host selected</strong>
+                <p>Choose a host row to inspect related alerts.</p>
+              </div>
+            </article>
+          </section>
+
+          <section
+            class="page"
+            id="page-correlations"
+            aria-labelledby="correlations-title"
+          >
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">INVESTIGATION / EVENT CORRELATION</p>
+                <h1 id="correlations-title">Alert correlations</h1>
+                <p class="muted">
+                  Find source hosts that triggered multiple detection rules
+                  within a rolling 10-minute window.
+                </p>
+              </div>
+              <button class="secondary-btn" id="refresh-correlations">
+                ↻ Refresh
+              </button>
+            </div>
+            <div class="empty-banner">
+              <div class="empty-icon">⤳</div>
+              <div>
+                <strong
+                  >Correlations are investigation leads, not confirmed
+                  attacks</strong
+                >
+                <p>
+                  NetSentry groups alerts by source IP and time window. Validate
+                  each alert and use other authorized logs before taking action.
+                </p>
+              </div>
+            </div>
+            <article class="panel table-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Related alert groups</h2>
+                  <p class="muted" id="correlation-summary">
+                    Run an analysis to find related alerts.
+                  </p>
+                </div>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Severity</th>
+                      <th>Source host</th>
+                      <th>Alerts</th>
+                      <th>Detection rules</th>
+                      <th>First seen</th>
+                      <th>Last seen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="correlations-table-body">
+                    <tr>
+                      <td colspan="6" class="empty-cell">
+                        No correlation data yet.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Investigation guidance</h2>
+                  <p class="muted">
+                    Suggested next steps for a correlated source
+                  </p>
+                </div>
+              </div>
+              <div id="correlation-detail" class="detail-empty">
+                <span>⤳</span><strong>Select a correlation</strong>
+                <p>
+                  Choose a row to review the related rules and suggested
+                  investigation.
+                </p>
+              </div>
+            </article>
+          </section>
+
+          <section
+            class="page"
+            id="page-incidents"
+            aria-labelledby="incidents-title"
+          >
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">RESPONSE / CASE MANAGEMENT</p>
+                <h1 id="incidents-title">Incident desk</h1>
+                <p class="muted">
+                  Promote alerts into tracked cases, assign an owner, record
+                  investigation notes, and track resolution.
+                </p>
+              </div>
+              <button class="secondary-btn" id="refresh-incidents">
+                ↻ Refresh incidents
+              </button>
+            </div>
+            <div class="metric-grid">
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span>Total incidents</span
+                  ><span class="metric-icon cyan">▣</span>
+                </div>
+                <strong class="metric-value" id="incident-total">0</strong>
+                <div class="metric-foot">Saved locally on this machine</div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span>Open</span><span class="metric-icon red">!</span>
+                </div>
+                <strong class="metric-value" id="incident-open">0</strong>
+                <div class="metric-foot">Awaiting triage</div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span>Investigating</span
+                  ><span class="metric-icon orange">⌕</span>
+                </div>
+                <strong class="metric-value" id="incident-investigating"
+                  >0</strong
+                >
+                <div class="metric-foot">Actively being reviewed</div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span>Resolved / false positive</span
+                  ><span class="metric-icon green">✓</span>
+                </div>
+                <strong class="metric-value" id="incident-closed">0</strong>
+                <div class="metric-foot">Closed cases</div>
+              </article>
+            </div>
+            <div class="incident-layout">
+              <article class="panel table-panel">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Tracked incidents</h2>
+                    <p class="muted">
+                      Cases persist across application restarts.
+                    </p>
+                  </div>
+                  <label class="filter-field"
+                    ><span>Status</span
+                    ><select id="incident-status-filter">
+                      <option value="">All statuses</option>
+                      <option>OPEN</option>
+                      <option>INVESTIGATING</option>
+                      <option>RESOLVED</option>
+                      <option>FALSE_POSITIVE</option>
+                    </select></label
+                  >
+                </div>
+                <div class="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Severity</th>
+                        <th>Incident</th>
+                        <th>Source</th>
+                        <th>Status</th>
+                        <th>Assigned to</th>
+                        <th>Updated</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="incidents-table-body">
+                      <tr>
+                        <td colspan="7" class="empty-cell">
+                          No incidents yet. Open an alert and choose Create
+                          incident.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+              <aside class="panel incident-editor">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Case details</h2>
+                    <p class="muted">Select an incident to update it.</p>
+                  </div>
+                </div>
+                <div id="incident-editor-content" class="result-placeholder">
+                  No incident selected.
+                </div>
+              </aside>
+            </div>
+            <p class="helper-text">
+              Incident records are saved as JSON under
+              <code>~/.netsentry/incidents</code> by default. They store alert
+              metadata, status, assignee, and notes—not the original traffic
+              dataset.
+            </p>
+          </section>
+
+          <section class="page" id="page-rules" aria-labelledby="rules-title">
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">DETECTION / CONFIGURATION</p>
+                <h1 id="rules-title">Detection rules</h1>
+                <p class="muted">
+                  Review the rules and thresholds currently loaded by the Java
+                  engine.
+                </p>
+              </div>
+              <span class="panel-tag" id="rules-loaded">CONFIG LOADED</span>
+            </div>
+            <div class="rules-grid" id="rules-grid">
+              <div class="panel result-placeholder">
+                Loading rule configuration…
+              </div>
+            </div>
+            <article class="panel allowlist-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Source allowlist</h2>
+                  <p class="muted">
+                    Records from these source IPs are excluded from detection.
+                  </p>
+                </div>
+              </div>
+              <div id="allowlist-values" class="allowlist-values">
+                <span class="muted">Loading allowlist…</span>
+              </div>
+              <p class="helper-text">
+                Edit <code>config/rules.json</code> and restart NetSentry to
+                change configuration. Runtime editing is intentionally not
+                exposed by this demo.
+              </p>
+            </article>
+            <article class="info-callout">
+              <span>ⓘ</span>
+              <div>
+                <strong>Thresholds are heuristics</strong>
+                <p>
+                  Adjust thresholds to fit the traffic profile. Low thresholds
+                  may increase false positives; high thresholds may miss
+                  low-volume events. Always validate findings against related
+                  telemetry.
+                </p>
+              </div>
+            </article>
+          </section>
+
+          <section
+            class="page"
+            id="page-reports"
+            aria-labelledby="reports-title"
+          >
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">OUTPUT / AUDIT TRAIL</p>
+                <h1 id="reports-title">Reports</h1>
+                <p class="muted">
+                  Review and download the most recent analysis result.
+                </p>
+              </div>
+              <div class="report-actions">
+                <button class="secondary-btn" id="download-json">
+                  ↓ Download JSON</button
+                ><button class="primary-btn" id="download-csv">
+                  ↓ Download alerts CSV
+                </button>
+              </div>
+            </div>
+            <article class="panel report-overview">
+              <div class="panel-heading">
+                <div>
+                  <h2>Latest analysis report</h2>
+                  <p class="muted">Generated by the local detection engine</p>
+                </div>
+                <span class="panel-tag" id="report-badge">NO REPORT</span>
+              </div>
+              <div id="report-summary" class="report-placeholder">
+                No report is available yet. Run an analysis to generate one.
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Report contents</h2>
+                  <p class="muted">
+                    JSON report includes the following information
+                  </p>
+                </div>
+              </div>
+              <div class="report-fields">
+                <div>
+                  <span class="report-field-icon">◷</span
+                  ><strong>Run metadata</strong>
+                  <p>
+                    Dataset name, analysis timestamp, duration, and processing
+                    rate.
+                  </p>
+                </div>
+                <div>
+                  <span class="report-field-icon">▦</span
+                  ><strong>Input quality</strong>
+                  <p>
+                    Total, accepted, and rejected records with validation
+                    messages.
+                  </p>
+                </div>
+                <div>
+                  <span class="report-field-icon">⚑</span
+                  ><strong>Findings</strong>
+                  <p>
+                    Alert identifiers, severity, evidence, explanation, and
+                    recommendations.
+                  </p>
+                </div>
+                <div>
+                  <span class="report-field-icon">⌘</span
+                  ><strong>Configuration</strong>
+                  <p>Rule settings and allowlist used during the analysis.</p>
+                </div>
+              </div>
+            </article>
+          </section>
+        </div>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/js/app.js" defer></script>
+    <script src="/js/correlations.js" defer></script>
+    <script src="/js/dashboard.js" defer></script>
+    <script src="/js/analysis.js" defer></script>
+    <script src="/js/alerts.js" defer></script>
+    <script src="/js/rules.js" defer></script>
+    <script src="/js/incidents.js" defer></script>
+  </body>
+</html>

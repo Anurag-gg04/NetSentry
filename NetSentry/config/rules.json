@@ -1,0 +1,9 @@
+{
+  "allowlist": ["127.0.0.1", "::1"],
+  "portScan": { "enabled": true, "threshold": 10, "windowSeconds": 60, "severity": "HIGH" },
+  "connectionBurst": { "enabled": true, "threshold": 30, "windowSeconds": 60, "severity": "MEDIUM" },
+  "failedConnections": { "enabled": true, "threshold": 8, "windowSeconds": 120, "severity": "HIGH" },
+  "trafficSpike": { "enabled": true, "threshold": 20, "windowSeconds": 60, "bucketSeconds": 60, "baselineMultiplier": 2.0, "severity": "MEDIUM" },
+  "hostSweep": { "enabled": true, "threshold": 12, "windowSeconds": 60, "severity": "MEDIUM" },
+  "deduplicationWindowSeconds": 60
+}
