@@ -39,7 +39,7 @@ public final class Main {
 
     private static void run(String[] args) throws Exception {
         if (args.length == 0) {
-            web(8080);
+            web(envPort());
             return;
         }
         String command = args[0].toLowerCase(Locale.ROOT);
@@ -74,6 +74,19 @@ public final class Main {
                     throw new IllegalArgumentException("Port must be a number");
                 }
             }
+        return envPort();
+    }
+
+    private static int envPort() {
+        String env = System.getenv("PORT");
+        if (env != null && !env.isBlank()) {
+            try {
+                int p = Integer.parseInt(env.trim());
+                if (p >= 1024 && p <= 65535)
+                    return p;
+            } catch (NumberFormatException ignored) {
+            }
+        }
         return 8080;
     }
 

@@ -46,7 +46,15 @@ public class ApiServer {
     private HttpServer server;
     private ExecutorService executor;
     private static final long MAX_BODY = FlowParser.MAX_FILE_BYTES;
-    private static final List<Map<String, String>> SAMPLE_LIST = List.of( sample("normal.csv", "Normal mixed application traffic"), sample("port-scan.csv", "Synthetic scan across many destination ports"), sample("connection-burst.csv", "Synthetic high connection volume"), sample("failed-connections.csv", "Synthetic repeated failed connections"), sample("traffic-spike.csv", "Synthetic traffic spike against quiet baseline buckets"), sample("host-sweep.csv", "Synthetic source contacting many distinct destination hosts"), sample("mixed.csv", "Normal and suspicious records together"), sample("malformed.csv", "Intentionally malformed records for validation testing"));
+    private static final List<Map<String, String>> SAMPLE_LIST = List.of(
+            sample("normal.csv", "Normal mixed application traffic"),
+            sample("port-scan.csv", "Synthetic scan across many destination ports"),
+            sample("connection-burst.csv", "Synthetic high connection volume"),
+            sample("failed-connections.csv", "Synthetic repeated failed connections"),
+            sample("traffic-spike.csv", "Synthetic traffic spike against quiet baseline buckets"),
+            sample("host-sweep.csv", "Synthetic source contacting many distinct destination hosts"),
+            sample("mixed.csv", "Normal and suspicious records together"),
+            sample("malformed.csv", "Intentionally malformed records for validation testing"));
 
     public ApiServer(int port, RulesConfig config) {
         this.port = port;
@@ -54,14 +62,15 @@ public class ApiServer {
     }
 
     public void start() throws IOException {
-        server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
+        String host = System.getenv().getOrDefault("HOST", "127.0.0.1");
+        server = HttpServer.create(new InetSocketAddress(host, port), 0);
         server.createContext("/api/", this::handleApi);
         server.createContext("/", this::handleStatic);
         executor = Executors.newFixedThreadPool(Math.min(16, Math.max(4, Runtime.getRuntime().availableProcessors())));
         server.setExecutor(executor);
         server.start();
-        System.out.println("NetSentry " + VERSION + " dashboard: http://localhost:" + port);
-        System.out.println("Bound to 127.0.0.1 for local-only access. Press Ctrl+C to stop.");
+        System.out.println("NetSentry " + VERSION + " dashboard on " + host + ":" + port);
+        System.out.println("Press Ctrl+C to stop.");
     }
 
     public int actualPort() {
@@ -69,8 +78,10 @@ public class ApiServer {
     }
 
     public void stop() {
-        if (server != null) server.stop(0);
-        if (executor != null) executor.shutdownNow();
+        if (server != null)
+            server.stop(0);
+        if (executor != null)
+            executor.shutdownNow();
     }
 
     private void handleApi(HttpExchange x) throws IOException {
@@ -95,13 +106,17 @@ public class ApiServer {
                     return;
                 }
                 if (method.equals("DELETE")) {
-                    if (history.delete(id)) json(x, 200, Map.of("status", "deleted", "id", id));
-                    else json(x, 404, error("NOT_FOUND", "History record not found."));
+                    if (history.delete(id))
+                        json(x, 200, Map.of("status", "deleted", "id", id));
+                    else
+                        json(x, 404, error("NOT_FOUND", "History record not found."));
                     return;
                 }
                 var entry = history.get(id);
-                if (entry == null) json(x, 404, error("NOT_FOUND", "History record not found."));
-                else json(x, 200, entry);
+                if (entry == null)
+                    json(x, 404, error("NOT_FOUND", "History record not found."));
+                else
+                    json(x, 200, entry);
                 return;
             }
             if (path.equals("/api/incidents") && method.equals("GET")) {
@@ -119,14 +134,19 @@ public class ApiServer {
                     return;
                 }
                 if (method.equals("DELETE")) {
-                    if (incidents.delete(id)) json(x, 200, Map.of("status", "deleted", "id", id));
-                    else json(x, 404, error("NOT_FOUND", "Incident not found."));
+                    if (incidents.delete(id))
+                        json(x, 200, Map.of("status", "deleted", "id", id));
+                    else
+                        json(x, 404, error("NOT_FOUND", "Incident not found."));
                     return;
                 }
                 JsonNode node = Json.mapper().readTree(readLimited(x.getRequestBody()));
-                Incident updated = incidents.update(id, textField(node, "status"), textField(node, "assignedTo"), textField(node, "notes"));
-                if (updated == null) json(x, 404, error("NOT_FOUND", "Incident not found."));
-                else json(x, 200, updated);
+                Incident updated = incidents.update(id, textField(node, "status"), textField(node, "assignedTo"),
+                        textField(node, "notes"));
+                if (updated == null)
+                    json(x, 404, error("NOT_FOUND", "Incident not found."));
+                else
+                    json(x, 200, updated);
                 return;
             }
             if (path.equals("/api/health") && method.equals("GET")) {
@@ -216,25 +236,36 @@ public class ApiServer {
     private void createIncident(HttpExchange x) throws IOException {
         JsonNode node = Json.mapper().readTree(readLimited(x.getRequestBody()));
         String alertId = textField(node, "alertId");
-        if (alertId == null || alertId.isBlank()) throw new IllegalArgumentException("alertId is required.");
+        if (alertId == null || alertId.isBlank())
+            throw new IllegalArgumentException("alertId is required.");
         AnalysisResult result = latest.get();
-        if (result == null) throw new IllegalArgumentException("Analyze a dataset before creating an incident.");
+        if (result == null)
+            throw new IllegalArgumentException("Analyze a dataset before creating an incident.");
         Alert alert = result.alerts.stream().filter(a -> alertId.equals(a.id)).findFirst().orElse(null);
-        if (alert == null) throw new IllegalArgumentException("The alert was not found in the latest analysis. Run the analysis again if needed.");
+        if (alert == null)
+            throw new IllegalArgumentException(
+                    "The alert was not found in the latest analysis. Run the analysis again if needed.");
         Incident incident = incidents.create(alert, textField(node, "title"));
         json(x, 201, incident);
     }
 
     private static String textField(JsonNode node, String field) {
-        if (node == null || node.get(field) == null || node.get(field).isNull()) return null;
+        if (node == null || node.get(field) == null || node.get(field).isNull())
+            return null;
         return node.get(field).asText();
     }
 
     private void analyzeUpload(HttpExchange x) throws IOException {
         Map<String, String> query = query(x);
         String filename = query.get("filename");
-        if (filename == null || filename.isBlank()) filename = x.getRequestHeaders().getFirst("Content-Type") != null && x.getRequestHeaders().getFirst("Content-Type").toLowerCase(Locale.ROOT).contains("json") ? "upload.json" : "upload.csv";
-        if (!(filename.toLowerCase(Locale.ROOT).endsWith(".csv") || filename.toLowerCase(Locale.ROOT).endsWith(".json"))) throw new IllegalArgumentException("filename must end with .csv or .json");
+        if (filename == null || filename.isBlank())
+            filename = x.getRequestHeaders().getFirst("Content-Type") != null
+                    && x.getRequestHeaders().getFirst("Content-Type").toLowerCase(Locale.ROOT).contains("json")
+                            ? "upload.json"
+                            : "upload.csv";
+        if (!(filename.toLowerCase(Locale.ROOT).endsWith(".csv")
+                || filename.toLowerCase(Locale.ROOT).endsWith(".json")))
+            throw new IllegalArgumentException("filename must end with .csv or .json");
         byte[] body = readLimited(x.getRequestBody());
         ParseResult parsed = parser.parse(body, filename);
         AnalysisResult result = engine.analyze(parsed, filename, config);
@@ -247,9 +278,11 @@ public class ApiServer {
         byte[] body = readLimited(x.getRequestBody());
         JsonNode node = body.length == 0 ? null : Json.mapper().readTree(body);
         String sample = node == null || node.get("sample") == null ? null : node.get("sample").asText();
-        if (sample == null || SAMPLE_LIST.stream().noneMatch(s -> sample.equals(s.get("name")))) throw new IllegalArgumentException("Choose a sample name returned by GET /api/samples");
+        if (sample == null || SAMPLE_LIST.stream().noneMatch(s -> sample.equals(s.get("name"))))
+            throw new IllegalArgumentException("Choose a sample name returned by GET /api/samples");
         try (InputStream in = ApiServer.class.getResourceAsStream("/samples/" + sample)) {
-            if (in == null) throw new IOException("Bundled sample is missing: " + sample);
+            if (in == null)
+                throw new IOException("Bundled sample is missing: " + sample);
             byte[] data = readLimited(in);
             ParseResult parsed = parser.parse(data, sample);
             AnalysisResult result = engine.analyze(parsed, "sample: " + sample, config);
@@ -269,7 +302,11 @@ public class ApiServer {
         String severity = q.getOrDefault("severity", "").toUpperCase(Locale.ROOT);
         String rule = q.getOrDefault("rule", "").toLowerCase(Locale.ROOT);
         String ip = q.getOrDefault("ip", "").toLowerCase(Locale.ROOT);
-        List<Alert> selected = a.alerts.stream().filter(v -> severity.isBlank() || v.severity.equals(severity)).filter(v -> rule.isBlank() || v.ruleName.toLowerCase(Locale.ROOT).contains(rule)).filter(v -> ip.isBlank() || (v.srcIp != null && v.srcIp.toLowerCase(Locale.ROOT).contains(ip)) || (v.dstIp != null && v.dstIp.toLowerCase(Locale.ROOT).contains(ip))).toList();
+        List<Alert> selected = a.alerts.stream().filter(v -> severity.isBlank() || v.severity.equals(severity))
+                .filter(v -> rule.isBlank() || v.ruleName.toLowerCase(Locale.ROOT).contains(rule))
+                .filter(v -> ip.isBlank() || (v.srcIp != null && v.srcIp.toLowerCase(Locale.ROOT).contains(ip))
+                        || (v.dstIp != null && v.dstIp.toLowerCase(Locale.ROOT).contains(ip)))
+                .toList();
         json(x, 200, selected);
     }
 
@@ -280,7 +317,8 @@ public class ApiServer {
             return;
         }
         String p = x.getRequestURI().getPath();
-        if (p.equals("/")) p = "/index.html";
+        if (p.equals("/"))
+            p = "/index.html";
         if (p.contains("..") || p.contains("\\") || p.contains("%2e")) {
             send(x, 400, "Bad path", "text/plain; charset=utf-8");
             return;
@@ -297,7 +335,8 @@ public class ApiServer {
                 x.getResponseHeaders().set("Content-Type", mime(p));
                 x.sendResponseHeaders(200, -1);
                 x.close();
-            } else sendBytes(x, 200, bytes, mime(p));
+            } else
+                sendBytes(x, 200, bytes, mime(p));
         }
     }
 
@@ -306,7 +345,8 @@ public class ApiServer {
         byte[] buffer = new byte[8192];
         int n;
         while ((n = in.read(buffer)) != -1) {
-            if ((long) out.size() + n > MAX_BODY) throw new RequestTooLarge("Request body exceeds the 10 MiB limit");
+            if ((long) out.size() + n > MAX_BODY)
+                throw new RequestTooLarge("Request body exceeds the 10 MiB limit");
             out.write(buffer, 0, n);
         }
         return out.toByteArray();
@@ -315,11 +355,13 @@ public class ApiServer {
     private static Map<String, String> query(HttpExchange x) {
         Map<String, String> map = new LinkedHashMap<>();
         String q = x.getRequestURI().getRawQuery();
-        if (q == null) return map;
+        if (q == null)
+            return map;
         for (String part : q.split("&")) {
             String[] kv = part.split("=", 2);
             try {
-                map.put(URLDecoder.decode(kv[0], StandardCharsets.UTF_8), kv.length > 1 ? URLDecoder.decode(kv[1], StandardCharsets.UTF_8) : "");
+                map.put(URLDecoder.decode(kv[0], StandardCharsets.UTF_8),
+                        kv.length > 1 ? URLDecoder.decode(kv[1], StandardCharsets.UTF_8) : "");
             } catch (Exception ignored) {
             }
         }
@@ -358,20 +400,26 @@ public class ApiServer {
         h.set("Content-Type", contentType);
         h.set("Cache-Control", "no-store");
         x.sendResponseHeaders(status, status == 204 ? -1 : body.length);
-        if (status != 204) x.getResponseBody().write(body);
+        if (status != 204)
+            x.getResponseBody().write(body);
         x.close();
     }
 
     private static String mime(String path) {
-        if (path.endsWith(".html")) return "text/html; charset=utf-8";
-        if (path.endsWith(".css")) return "text/css; charset=utf-8";
-        if (path.endsWith(".js")) return "application/javascript; charset=utf-8";
-        if (path.endsWith(".svg")) return "image/svg+xml";
+        if (path.endsWith(".html"))
+            return "text/html; charset=utf-8";
+        if (path.endsWith(".css"))
+            return "text/css; charset=utf-8";
+        if (path.endsWith(".js"))
+            return "application/javascript; charset=utf-8";
+        if (path.endsWith(".svg"))
+            return "image/svg+xml";
         return "application/octet-stream";
     }
 
     private static Map<String, String> sample(String name, String description) {
-        return Map.of("name", name, "description", description, "format", name.endsWith(".json") ? "JSON" : "CSV", "synthetic", "true");
+        return Map.of("name", name, "description", description, "format", name.endsWith(".json") ? "JSON" : "CSV",
+                "synthetic", "true");
     }
 
     private static final class RequestTooLarge extends IOException {
