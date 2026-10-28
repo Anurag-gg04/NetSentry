@@ -4,7 +4,7 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 RUN mvn clean package -DskipTests && \
-    cp $(ls target/*.jar | grep -v 'original-') target/app.jar
+    cp target/*shaded*.jar target/app.jar
 
 # Run stage
 FROM eclipse-temurin:17-jre
