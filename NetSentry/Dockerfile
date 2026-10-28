@@ -8,8 +8,8 @@ RUN mvn clean package -DskipTests
 # Run stage
 FROM eclipse-temurin:17-jre
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/target/netsentry.jar app.jar
 
 # Adjust this to the port your ApiServer.java uses
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar", "web"]
